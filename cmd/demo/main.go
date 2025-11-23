@@ -11,6 +11,7 @@ import (
 	"github.com/jerkeyray/tokbuk/pkg/middleware"
 )
 
+// KeyFunc implementation that identifies clients by IP address.
 func clientKey(r *http.Request) string {
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
@@ -22,21 +23,26 @@ func clientKey(r *http.Request) string {
 func main() {
 	manager := limiter.NewBucketManager()
 
-		rl := middleware.RateLimit(manager, 10, 5, clientKey)
+	// build rate limit middleware with capacity = 10, rate = 5
+	rl := middleware.RateLimit(manager, 10, 5, clientKey)
 
-		mux := http.NewServeMux()
+	// create router
+	mux := http.NewServeMux()
 
-		mux.Handle("/test", rl(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintln(w, "allowed")
-		})))
+	// wrap "/test" handler with rate limit middleware
+	mux.Handle("/test", rl(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "allowed")
+	})))
 
-		server := &http.Server{
-			Addr:              ":8080",
-			Handler:           mux,
-			ReadHeaderTimeout: 2 * time.Second,
-		}
+	// configure and create HTTP server
+	server := &http.Server{
+		Addr:              ":8080",
+		Handler:           mux,
+		ReadHeaderTimeout: 2 * time.Second,
+	}
 
-		log.Println("Middleware demo running at http://localhost:8080/test")
-		log.Fatal(server.ListenAndServe())
+	log.Println("middleware demo running at http://localhost:8080/test")
+
+	// start server and exit if it fails
+	log.Fatal(server.ListenAndServe())
 }
-

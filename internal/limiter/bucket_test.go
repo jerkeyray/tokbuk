@@ -114,3 +114,13 @@ func TestZeroOrNegativeRequestsAreRejected(t *testing.T) {
 		t.Fatal("should reject negative token request")
 	}
 }
+
+func BenchmarkAllowConcurrent(b *testing.B) {
+	bucket := NewTokenBucket(10, 5)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			bucket.Allow(1)
+		}
+	})
+}
